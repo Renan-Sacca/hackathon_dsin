@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar Agente' if is_edit else 'Novo Agente' }} — PROMETHEUS F.O.G.O.{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-xl-8 col-lg-10">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <a href="/admin/agentes" class="text-secondary text-decoration-none small d-inline-flex align-items-center gap-1 mb-1">
+                    <i class="bi bi-arrow-left"></i> Voltar para a lista
+                </a>
+                <h2 class="fw-bold text-light mb-0">
+                    <i class="bi bi-{{ 'person-gear' if is_edit else 'person-plus' }} text-info me-2"></i>
+                    {{ 'Editar Agente' if is_edit else 'Cadastrar Novo Agente' }}
+                </h2>
+            </div>
+        </div>
+
+        <!-- Form Card -->
+        <div class="glass-panel p-4 p-md-5 mb-5">
+            <form id="form-agente">
+                <h5 class="text-info fw-bold mb-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-person-badge"></i> Dados Funcionais do Profissional
+                </h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-7">
+                        <label class="form-label" for="nome">Nome Completo *</label>
+                        <input type="text" id="nome" name="nome" class="form-control" placeholder="Ex: Sargento Carlos Eduardo Santos" required>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label" for="matricula">Matrícula Funcional *</label>
+                        <input type="text" id="matricula" name="matricula" class="form-control font-monospace" placeholder="Ex: PM-89410" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="tipo">Corporação / Tipo *</label>
+                        <select id="tipo" name="tipo" class="form-select" required>
+                            <option value="agente_transito">Agente de Trânsito</option>
+                            <option value="guarda_municipal">Guarda Municipal</option>
+                            <option value="policial_militar">Policial Militar</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="orgao">Órgão de Vínculo *</label>
+                        <input type="text" id="orgao" name="orgao" class="form-control" placeholder="Ex: EMDURB, Guarda Civil Municipal, 9º BPM/I" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="telefone">Telefone de Contato / Rádio</label>
+                        <input type="text" id="telefone" name="telefone" class="form-control" placeholder="Ex: (14) 99888-7766">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="situacao">Situação Atual *</label>
+                        <select id="situacao" name="situacao" class="form-select" required>
+                            <option value="em_atividade">Em Atividade</option>
+                            <option value="fora_de_servico">Fora de Serviço</option>
+                            <option value="ferias">Férias</option>
+                            <option value="afastado">Afastado / Licença Médica</option>
+                        </select>
+                    </div>
+                </div>
+
+                <hr class="border-secondary border-opacity-25 my-4">
+
+                <!-- Seção 2: Localização GPS Atual -->
+                <h5 class="text-info fw-bold mb-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-geo"></i> Posicionamento Geográfico (Opcional)
+                </h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label" for="latitude">Latitude Atual</label>
+                        <input type="number" step="any" id="latitude" name="latitude" class="form-control font-monospace" placeholder="-22.2140">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="longitude">Longitude Atual</label>
+                        <input type="number" step="any" id="longitude" name="longitude" class="form-control font-monospace" placeholder="-49.9460">
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-3 mt-5 pt-3 border-top border-secondary border-opacity-25">
+                    <a href="/admin/agentes" class="btn btn-outline-glass px-4">Cancelar</a>
+                    <button type="submit" id="btn-salvar" class="btn btn-cyan px-5">
+                        <i class="bi bi-check-lg"></i> Salvar Agente
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const isEdit = {{ 'true' if is_edit else 'false' }};
+    const agenteId = {{ agente_id if agente_id else 'null' }};
+    const form = document.getElementById('form-agente');
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (isEdit && agenteId) {
+            try {
+                const ag = await apiFetch(`/api/agentes/${agenteId}`);
+                if (!ag) return;
+
+                document.getElementById('nome').value = ag.nome;
+                document.getElementById('matricula').value = ag.matricula;
+                document.getElementById('tipo').value = ag.tipo;
+                document.getElementById('orgao').value = ag.orgao;
+                document.getElementById('telefone').value = ag.telefone || '';
+                document.getElementById('situacao').value = ag.situacao;
+                if (ag.latitude !== null) document.getElementById('latitude').value = ag.latitude;
+                if (ag.longitude !== null) document.getElementById('longitude').value = ag.longitude;
+            } catch (err) {
+                showToast('Falha ao carregar dados do agente.', 'danger');
+            }
+        }
+    });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btnSalvar = document.getElementById('btn-salvar');
+        btnSalvar.disabled = true;
+        btnSalvar.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+
+        const latVal = document.getElementById('latitude').value;
+        const lonVal = document.getElementById('longitude').value;
+
+        const payload = {
+            nome: document.getElementById('nome').value.trim(),
+            matricula: document.getElementById('matricula').value.trim(),
+            tipo: document.getElementById('tipo').value,
+            orgao: document.getElementById('orgao').value.trim(),
+            telefone: document.getElementById('telefone').value.trim() || null,
+            situacao: document.getElementById('situacao').value,
+            latitude: latVal ? parseFloat(latVal) : null,
+            longitude: lonVal ? parseFloat(lonVal) : null
+        };
+
+        try {
+            const url = isEdit ? `/api/agentes/${agenteId}` : '/api/agentes';
+            const method = isEdit ? 'PUT' : 'POST';
+
+            await apiFetch(url, {
+                method: method,
+                body: JSON.stringify(payload)
+            });
+
+            showToast(isEdit ? 'Agente atualizado com sucesso!' : 'Agente cadastrado com sucesso!', 'success');
+            setTimeout(() => {
+                window.location.href = '/admin/agentes';
+            }, 600);
+        } catch (err) {
+            btnSalvar.disabled = false;
+            btnSalvar.innerHTML = '<i class="bi bi-check-lg"></i> Salvar Agente';
+        }
+    });
+</script>
+{% endblock %}

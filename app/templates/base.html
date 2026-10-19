@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PROMETHEUS — F.O.G.O.{% endblock %}</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2306b6d4'><path d='M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z'/></svg>">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- PROMETHEUS Custom Design System -->
+    <link href="/static/css/style.css" rel="stylesheet">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    {% if not hide_navbar %}
+    <!-- Main Top Navbar -->
+    <nav class="navbar navbar-prometheus navbar-expand-lg">
+        <div class="container-fluid px-lg-4">
+            <a class="navbar-brand brand-title" href="/admin/dashboard">
+                <i class="bi bi-shield-shaded text-info fs-4"></i>
+                <span>PROMETHEUS <small class="text-secondary fw-normal fs-6">F.O.G.O.</small></span>
+            </a>
+
+            <button class="navbar-toggler border-0 text-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#navContent">
+                <i class="bi bi-list fs-2"></i>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4 gap-1">
+                    <li class="nav-item">
+                        <a class="nav-link-custom {% if active_page == 'dashboard' %}active{% endif %}" href="/admin/dashboard">
+                            <i class="bi bi-grid-1x2"></i> Central de Operações
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link-custom {% if active_page == 'equipamentos' %}active{% endif %}" href="/admin/equipamentos">
+                            <i class="bi bi-cpu"></i> Equipamentos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link-custom {% if active_page == 'agentes' %}active{% endif %}" href="/admin/agentes">
+                            <i class="bi bi-person-badge"></i> Agentes
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link-custom {% if active_page == 'preditivo' %}active{% endif %}" href="/admin/preditivo">
+                            <i class="bi bi-graph-up-arrow"></i> Preditivo
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- User profile & Logout -->
+                <div class="d-flex align-items-center gap-3">
+                    <div class="d-none d-md-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-dark border border-secondary border-opacity-25">
+                        <i class="bi bi-person-circle text-info"></i>
+                        <span id="user-display-name" class="small fw-semibold text-light">Operador</span>
+                        <span id="user-display-role" class="badge bg-secondary text-uppercase" style="font-size: 0.65rem;">ADMIN</span>
+                    </div>
+
+                    <a href="/docs" target="_blank" class="btn btn-outline-glass btn-sm" title="Swagger API Docs">
+                        <i class="bi bi-code-slash"></i> API
+                    </a>
+
+                    <button onclick="logoutUser()" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1" title="Encerrar Sessão">
+                        <i class="bi bi-box-arrow-right"></i> Sair
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <!-- Main Content Container -->
+    <main class="flex-grow-1 {% if not full_width %}container-fluid px-lg-4 py-4{% endif %}">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% if not hide_navbar %}
+    <!-- Footer -->
+    <footer>
+        <div class="container-fluid px-lg-4 d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
+            <div>
+                <span class="fw-semibold text-light">PROMETHEUS</span> — Sistema Inteligente de Monitoramento Urbano & Trânsito
+            </div>
+            <div class="d-flex align-items-center gap-3 small">
+                <span class="d-inline-flex align-items-center gap-1 text-success">
+                    <i class="bi bi-circle-fill" style="font-size: 0.5rem;"></i> Sistema Operacional
+                </span>
+                <span class="text-secondary">Versão 1.0.0</span>
+            </div>
+        </div>
+    </footer>
+    {% endif %}
+
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Core Application Script -->
+    <script src="/static/js/app.js"></script>
+    <script>
+        // Automatic user info hydrate from /api/auth/me if logged in
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!window.location.pathname.includes('/login')) {
+                try {
+                    const me = await apiFetch('/api/auth/me', { silentError: true });
+                    if (me) {
+                        const nameEl = document.getElementById('user-display-name');
+                        const roleEl = document.getElementById('user-display-role');
+                        if (nameEl) nameEl.textContent = me.nome;
+                        if (roleEl) {
+                            roleEl.textContent = me.tipo;
+                            if (me.tipo === 'ADMIN') {
+                                roleEl.className = 'badge bg-cyan text-dark fw-bold text-uppercase';
+                            }
+                        }
+                    }
+                } catch (e) {}
+            }
+        });
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

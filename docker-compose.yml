@@ -1,0 +1,15 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: prometheus-app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/app
+    env_file:
+      - .env
+    environment:
+      - ENVIRONMENT=development
+    restart: unless-stopped

@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar Equipamento' if is_edit else 'Novo Equipamento' }} — PROMETHEUS F.O.G.O.{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-xl-9 col-lg-11">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <a href="/admin/equipamentos" class="text-secondary text-decoration-none small d-inline-flex align-items-center gap-1 mb-1">
+                    <i class="bi bi-arrow-left"></i> Voltar para a lista
+                </a>
+                <h2 class="fw-bold text-light mb-0">
+                    <i class="bi bi-{{ 'pencil-square' if is_edit else 'plus-circle' }} text-info me-2"></i>
+                    {{ 'Editar Equipamento' if is_edit else 'Cadastrar Novo Equipamento' }}
+                </h2>
+            </div>
+            {% if is_edit %}
+            <span id="badge-situacao-topo" class="badge-situacao badge-operacional fs-6"></span>
+            {% endif %}
+        </div>
+
+        <!-- Form Card -->
+        <div class="glass-panel p-4 p-md-5 mb-5">
+            <form id="form-equipamento">
+                <!-- Seção 1: Identificação Básica -->
+                <h5 class="text-info fw-bold mb-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-info-circle"></i> 1. Identificação Básica
+                </h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label" for="numero_serie">Número de Série *</label>
+                        <input type="text" id="numero_serie" name="numero_serie" class="form-control" placeholder="Ex: RAD-VEL-0042" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="marca">Fabricante / Marca *</label>
+                        <input type="text" id="marca" name="marca" class="form-control" placeholder="Ex: FiscalTech, Bosch, Hikvision" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="modelo">Modelo *</label>
+                        <input type="text" id="modelo" name="modelo" class="form-control" placeholder="Ex: SpeedCam Pro v4" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="tipo">Tipo de Equipamento *</label>
+                        <select id="tipo" name="tipo" class="form-select" required>
+                            <option value="">Selecione o Tipo...</option>
+                            <option value="radar_velocidade">Radar de Velocidade</option>
+                            <option value="radar_semaforo">Radar de Semáforo</option>
+                            <option value="radar_conversao">Radar de Conversão Proibida</option>
+                            <option value="camera_monitoramento">Câmera de Videomonitoramento</option>
+                            <option value="balanca_caminhao">Balança de Caminhão</option>
+                            <option value="veiculo_fiscalizacao_estacionamento">Veículo Fiscalização de Estacionamento</option>
+                            <option value="cancela_automatizada">Cancela Automatizada</option>
+                            <option value="veiculo_transporte">Veículo de Transporte (Táxi/Escolar)</option>
+                            <option value="totem_estacionamento">Totem Autoatendimento Estacionamento</option>
+                            <option value="patinete_eletrico">Patinete Elétrico Compartilhado</option>
+                            <option value="moto_agente">Moto de Agente de Trânsito</option>
+                            <option value="viatura_guarda">Viatura da Guarda Municipal</option>
+                            <option value="viatura_policia">Viatura da Polícia Militar</option>
+                            <option value="outro">Outro Dispositivo</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="orgao_responsavel">Órgão Responsável *</label>
+                        <input type="text" id="orgao_responsavel" name="orgao_responsavel" class="form-control" placeholder="Ex: EMDURB, Guarda Civil, Polícia Militar, CET" required>
+                    </div>
+                </div>
+
+                <hr class="border-secondary border-opacity-25 my-4">
+
+                <!-- Seção 2: Situação Operacional e Manutenção -->
+                <h5 class="text-info fw-bold mb-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-activity"></i> 2. Situação Operacional & Manutenção
+                </h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label" for="situacao">Situação Atual *</label>
+                        <select id="situacao" name="situacao" class="form-select" required>
+                            <option value="nao_instalado">Ainda Não Instalado</option>
+                            <option value="operacional">Operacional</option>
+                            <option value="mau_funcionamento">Mau Funcionamento</option>
+                            <option value="manutencao">Em Manutenção</option>
+                            <option value="furtado">Furtado</option>
+                            <option value="desativado">Desativado</option>
+                        </select>
+                        <small class="text-muted d-block mt-1">Mau funcionamento aciona manutenção imediata automaticamente.</small>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="manutencao_tipo">Necessidade de Manutenção</label>
+                        <select id="manutencao_tipo" name="manutencao_tipo" class="form-select">
+                            <option value="nenhuma">Nenhuma</option>
+                            <option value="imediata">Imediata (Urgente)</option>
+                            <option value="agendada">Agendada / Periódica</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="proxima_manutencao">Data da Próxima Manutenção</label>
+                        <input type="date" id="proxima_manutencao" name="proxima_manutencao" class="form-control">
+                    </div>
+                </div>
+
+                <hr class="border-secondary border-opacity-25 my-4">
+
+                <!-- Seção 3: Localização Geográfica -->
+                <h5 class="text-info fw-bold mb-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-geo-alt"></i> 3. Localização & Coordenadas GPS
+                </h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <label class="form-label" for="localizacao_cep">CEP</label>
+                        <input type="text" id="localizacao_cep" name="localizacao_cep" class="form-control" placeholder="17500-000">
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label" for="localizacao_rua">Nome da Rua / Avenida *</label>
+                        <input type="text" id="localizacao_rua" name="localizacao_rua" class="form-control" placeholder="Av. Sampaio Vidal" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="localizacao_bairro">Bairro *</label>
+                        <input type="text" id="localizacao_bairro" name="localizacao_bairro" class="form-control" placeholder="Centro" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="localizacao_referencia">Referência de Localização</label>
+                        <input type="text" id="localizacao_referencia" name="localizacao_referencia" class="form-control" placeholder="Ex: oposto ao nº 181, KM 203">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="latitude">Latitude (GPS) *</label>
+                        <input type="number" step="any" id="latitude" name="latitude" class="form-control font-monospace" placeholder="-22.2138" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="longitude">Longitude (GPS) *</label>
+                        <input type="number" step="any" id="longitude" name="longitude" class="form-control font-monospace" placeholder="-49.9458" required>
+                    </div>
+                </div>
+
+                <hr class="border-secondary border-opacity-25 my-4">
+
+                <!-- Seção 4: Propriedades Dinâmicas Específicas do Tipo (P1-JS-02) -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="text-info fw-bold mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-sliders"></i> 4. Características & Propriedades Dinâmicas
+                    </h5>
+                    <button type="button" class="btn btn-outline-glass btn-sm" onclick="addCustomPropertyRow()">
+                        <i class="bi bi-plus-lg"></i> Adicionar Propriedade Livre
+                    </button>
+                </div>
+                <p class="text-muted small mb-3">
+                    Campos adaptados de acordo com o tipo selecionado acima (resolução, visão noturna, velocidade máxima, etc.).
+                </p>
+
+                <div id="dynamic-properties-container" class="row">
+                    <!-- Gerado automaticamente via renderDynamicProperties -->
+                </div>
+
+                <div class="d-flex justify-content-end gap-3 mt-5 pt-3 border-top border-secondary border-opacity-25">
+                    <a href="/admin/equipamentos" class="btn btn-outline-glass px-4">Cancelar</a>
+                    <button type="submit" id="btn-salvar" class="btn btn-cyan px-5">
+                        <i class="bi bi-check-lg"></i> Salvar Equipamento
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const isEdit = {{ 'true' if is_edit else 'false' }};
+    const equipamentoId = {{ equipamento_id if equipamento_id else 'null' }};
+    const form = document.getElementById('form-equipamento');
+    const tipoSelect = document.getElementById('tipo');
+    const situacaoSelect = document.getElementById('situacao');
+    const manutencaoSelect = document.getElementById('manutencao_tipo');
+    let loadedProps = [];
+    let initialSituacao = null;
+
+    // React to Tipo change
+    tipoSelect.addEventListener('change', () => {
+        renderDynamicProperties(tipoSelect.value, loadedProps);
+    });
+
+    // Auto switch maintenance to immediate if mau_funcionamento selected
+    situacaoSelect.addEventListener('change', () => {
+        if (situacaoSelect.value === 'mau_funcionamento') {
+            manutencaoSelect.value = 'imediata';
+            showToast('Situação com mau funcionamento aciona manutenção imediata automaticamente.', 'warning');
+        }
+    });
+
+    // Load data if in edit mode
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (isEdit && equipamentoId) {
+            try {
+                const eq = await apiFetch(`/api/equipamentos/${equipamentoId}`);
+                if (!eq) return;
+
+                initialSituacao = eq.situacao;
+                document.getElementById('numero_serie').value = eq.numero_serie;
+                document.getElementById('marca').value = eq.marca;
+                document.getElementById('modelo').value = eq.modelo;
+                document.getElementById('tipo').value = eq.tipo;
+                document.getElementById('orgao_responsavel').value = eq.orgao_responsavel;
+                document.getElementById('situacao').value = eq.situacao;
+                document.getElementById('manutencao_tipo').value = eq.manutencao_tipo;
+                if (eq.proxima_manutencao) {
+                    document.getElementById('proxima_manutencao').value = eq.proxima_manutencao;
+                }
+                document.getElementById('localizacao_cep').value = eq.localizacao_cep || '';
+                document.getElementById('localizacao_rua').value = eq.localizacao_rua;
+                document.getElementById('localizacao_bairro').value = eq.localizacao_bairro;
+                document.getElementById('localizacao_referencia').value = eq.localizacao_referencia || '';
+                document.getElementById('latitude').value = eq.latitude;
+                document.getElementById('longitude').value = eq.longitude;
+
+                const badge = document.getElementById('badge-situacao-topo');
+                if (badge) {
+                    badge.className = `badge-situacao badge-${eq.situacao.replace('_', '-')}`;
+                    badge.textContent = eq.situacao.toUpperCase();
+                }
+
+                loadedProps = eq.propriedades || [];
+                renderDynamicProperties(eq.tipo, loadedProps);
+            } catch (err) {
+                showToast('Falha ao carregar dados do equipamento.', 'danger');
+            }
+        } else {
+            renderDynamicProperties(tipoSelect.value, []);
+        }
+    });
+
+    // Form submission
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btnSalvar = document.getElementById('btn-salvar');
+        btnSalvar.disabled = true;
+        btnSalvar.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
+
+        const payload = {
+            numero_serie: document.getElementById('numero_serie').value.trim(),
+            marca: document.getElementById('marca').value.trim(),
+            modelo: document.getElementById('modelo').value.trim(),
+            tipo: document.getElementById('tipo').value,
+            orgao_responsavel: document.getElementById('orgao_responsavel').value.trim(),
+            situacao: document.getElementById('situacao').value,
+            manutencao_tipo: document.getElementById('manutencao_tipo').value,
+            proxima_manutencao: document.getElementById('proxima_manutencao').value || null,
+            localizacao_cep: document.getElementById('localizacao_cep').value.trim() || null,
+            localizacao_rua: document.getElementById('localizacao_rua').value.trim(),
+            localizacao_bairro: document.getElementById('localizacao_bairro').value.trim(),
+            localizacao_cidade: 'Marília',
+            localizacao_uf: 'SP',
+            localizacao_referencia: document.getElementById('localizacao_referencia').value.trim() || null,
+            latitude: parseFloat(document.getElementById('latitude').value),
+            longitude: parseFloat(document.getElementById('longitude').value),
+            propriedades: collectPropertiesFromForm()
+        };
+
+        // Check reactivation rule from furtado/desativado to operacional
+        let forceReactivation = false;
+        if (isEdit && initialSituacao && ['furtado', 'desativado'].includes(initialSituacao) && payload.situacao === 'operacional') {
+            const confirma = confirm(
+                "Atenção: Este equipamento está classificado como 'FURTADO' ou 'DESATIVADO'. " +
+                "Deseja confirmar a vistoria técnica e forçar a reativação para OPERACIONAL?"
+            );
+            if (!confirma) {
+                btnSalvar.disabled = false;
+                btnSalvar.innerHTML = '<i class="bi bi-check-lg"></i> Salvar Equipamento';
+                return;
+            }
+            forceReactivation = true;
+        }
+
+        try {
+            const url = isEdit 
+                ? `/api/equipamentos/${equipamentoId}?force_reactivation=${forceReactivation}`
+                : '/api/equipamentos';
+            const method = isEdit ? 'PUT' : 'POST';
+
+            await apiFetch(url, {
+                method: method,
+                body: JSON.stringify(payload)
+            });
+
+            showToast(isEdit ? 'Equipamento atualizado com sucesso!' : 'Equipamento cadastrado com sucesso!', 'success');
+            setTimeout(() => {
+                window.location.href = '/admin/equipamentos';
+            }, 600);
+        } catch (err) {
+            btnSalvar.disabled = false;
+            btnSalvar.innerHTML = '<i class="bi bi-check-lg"></i> Salvar Equipamento';
+        }
+    });
+</script>
+{% endblock %}

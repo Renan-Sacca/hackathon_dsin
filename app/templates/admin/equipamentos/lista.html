@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block title %}Inventário de Equipamentos — PROMETHEUS F.O.G.O.{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+        <h2 class="fw-bold text-light mb-1 d-flex align-items-center gap-2">
+            <i class="bi bi-cpu text-info"></i> Equipamentos Urbanos
+        </h2>
+        <p class="text-secondary small mb-0">Catálogo inteligente de dispositivos de segurança e trânsito com telemetria.</p>
+    </div>
+    <div class="col-md-6 text-md-end mt-3 mt-md-0">
+        <a href="/admin/equipamentos/novo" class="btn btn-cyan shadow-sm">
+            <i class="bi bi-plus-lg"></i> Novo Equipamento
+        </a>
+    </div>
+</div>
+
+<!-- Filters Panel -->
+<div class="glass-panel p-4 mb-4">
+    <div class="row g-3">
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label"><i class="bi bi-search text-info me-1"></i> Busca Geral</label>
+            <input type="text" id="filtro-busca" class="form-control" placeholder="Nº série, marca, rua ou bairro...">
+        </div>
+        <div class="col-lg-2 col-md-6">
+            <label class="form-label"><i class="bi bi-tag text-info me-1"></i> Tipo</label>
+            <select id="filtro-tipo" class="form-select">
+                <option value="">Todos os Tipos</option>
+                <option value="radar_velocidade">Radar de Velocidade</option>
+                <option value="radar_semaforo">Radar de Semáforo</option>
+                <option value="radar_conversao">Radar de Conversão</option>
+                <option value="camera_monitoramento">Câmera de Monitoramento</option>
+                <option value="balanca_caminhao">Balança de Caminhão</option>
+                <option value="veiculo_fiscalizacao_estacionamento">Veículo Estacionamento</option>
+                <option value="cancela_automatizada">Cancela Automatizada</option>
+                <option value="veiculo_transporte">Veículo de Transporte</option>
+                <option value="totem_estacionamento">Totem Estacionamento</option>
+                <option value="patinete_eletrico">Patinete Elétrico</option>
+                <option value="moto_agente">Moto do Agente</option>
+                <option value="viatura_guarda">Viatura da Guarda</option>
+                <option value="viatura_policia">Viatura da Polícia</option>
+                <option value="outro">Outro</option>
+            </select>
+        </div>
+        <div class="col-lg-2 col-md-6">
+            <label class="form-label"><i class="bi bi-activity text-info me-1"></i> Situação</label>
+            <select id="filtro-situacao" class="form-select">
+                <option value="">Todas as Situações</option>
+                <option value="operacional">Operacional</option>
+                <option value="mau_funcionamento">Mau Funcionamento</option>
+                <option value="manutencao">Em Manutenção</option>
+                <option value="nao_instalado">Não Instalado</option>
+                <option value="furtado">Furtado</option>
+                <option value="desativado">Desativado</option>
+            </select>
+        </div>
+        <div class="col-lg-2 col-md-6">
+            <label class="form-label"><i class="bi bi-tools text-info me-1"></i> Manutenção</label>
+            <select id="filtro-manutencao" class="form-select">
+                <option value="">Qualquer</option>
+                <option value="imediata">Imediata (Urgente)</option>
+                <option value="agendada">Agendada</option>
+                <option value="nenhuma">Nenhuma</option>
+            </select>
+        </div>
+        <div class="col-lg-3 col-md-12 d-flex align-items-end gap-2">
+            <button id="btn-aplicar-filtros" class="btn btn-outline-glass flex-grow-1">
+                <i class="bi bi-funnel"></i> Filtrar
+            </button>
+            <button id="btn-limpar-filtros" class="btn btn-outline-glass text-muted" title="Limpar Filtros">
+                <i class="bi bi-arrow-counterclockwise"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Table Card -->
+<div class="glass-panel overflow-hidden mb-4">
+    <div class="table-responsive">
+        <table class="table table-dark-custom align-middle">
+            <thead>
+                <tr>
+                    <th>Nº Série / ID</th>
+                    <th>Tipo & Fabricante</th>
+                    <th>Localização</th>
+                    <th>Situação</th>
+                    <th>Manutenção</th>
+                    <th class="text-end">Ações</th>
+                </tr>
+            </thead>
+            <tbody id="equipamentos-tbody">
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        <div class="spinner-border spinner-border-sm text-info me-2"></div> Carregando equipamentos...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Table Footer / Counter -->
+    <div class="px-4 py-3 border-top border-secondary border-opacity-25 d-flex justify-content-between align-items-center text-muted small">
+        <div>
+            Total de registros: <span id="total-registros" class="fw-bold text-light">0</span>
+        </div>
+        <div id="pagination-info">
+            Página 1
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Detalhes Rápidos & Propriedades Dinâmicas -->
+<div class="modal fade" id="modalDetalhes" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content glass-panel border border-secondary border-opacity-50">
+            <div class="modal-header border-bottom border-secondary border-opacity-25">
+                <h5 class="modal-title brand-title" id="modal-titulo">Detalhes do Equipamento</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="modal-corpo">
+                <!-- Injetado dinamicamente -->
+            </div>
+            <div class="modal-footer border-top border-secondary border-opacity-25">
+                <button type="button" class="btn btn-outline-glass" data-bs-dismiss="modal">Fechar</button>
+                <a id="modal-btn-editar" href="#" class="btn btn-cyan">
+                    <i class="bi bi-pencil-square"></i> Editar Equipamento
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let equipamentosList = [];
+    const tbody = document.getElementById('equipamentos-tbody');
+    const totalEl = document.getElementById('total-registros');
+    const modalDetalhesEl = new bootstrap.Modal(document.getElementById('modalDetalhes'));
+
+    async function carregarEquipamentos() {
+        const busca = document.getElementById('filtro-busca').value.trim();
+        const tipo = document.getElementById('filtro-tipo').value;
+        const situacao = document.getElementById('filtro-situacao').value;
+        const manutencao = document.getElementById('filtro-manutencao').value;
+
+        const params = new URLSearchParams();
+        if (busca) params.append('busca', busca);
+        if (tipo) params.append('tipo', tipo);
+        if (situacao) params.append('situacao', situacao);
+        if (manutencao) params.append('manutencao_tipo', manutencao);
+        params.append('limit', '100');
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center py-5 text-muted">
+                    <div class="spinner-border spinner-border-sm text-info me-2"></div> Carregando equipamentos...
+                </td>
+            </tr>
+        `;
+
+        try {
+            const res = await apiFetch(`/api/equipamentos?${params.toString()}`);
+            equipamentosList = res.items || [];
+            totalEl.textContent = res.total;
+            renderTabela(equipamentosList);
+        } catch (err) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-danger">
+                        <i class="bi bi-exclamation-triangle me-1"></i> Falha ao carregar lista de equipamentos.
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    function renderTabela(lista) {
+        if (lista.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                        Nenhum equipamento encontrado para os filtros selecionados.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = lista.map(eq => {
+            const badgeClass = `badge-situacao badge-${eq.situacao.replace('_', '-')}`;
+            const situacaoLabel = formatarSituacao(eq.situacao);
+            const tipoLabel = formatarTipo(eq.tipo);
+
+            let manutencaoBadge = '<span class="text-muted small">Nenhuma</span>';
+            if (eq.manutencao_tipo === 'imediata') {
+                manutencaoBadge = '<span class="badge bg-danger text-uppercase"><i class="bi bi-exclamation-octagon me-1"></i>Imediata</span>';
+            } else if (eq.manutencao_tipo === 'agendada') {
+                manutencaoBadge = `<span class="badge bg-warning text-dark"><i class="bi bi-calendar-event me-1"></i>${eq.proxima_manutencao || 'Agendada'}</span>`;
+            }
+
+            return `
+                <tr>
+                    <td>
+                        <div class="fw-bold font-monospace text-info">${eq.numero_serie}</div>
+                        <div class="text-muted small">ID #${eq.id}</div>
+                    </td>
+                    <td>
+                        <div class="fw-semibold text-light">${tipoLabel}</div>
+                        <div class="text-muted small">${eq.marca} • ${eq.modelo}</div>
+                    </td>
+                    <td>
+                        <div class="text-light">${eq.localizacao_bairro}</div>
+                        <div class="text-muted small">${eq.localizacao_rua}</div>
+                    </td>
+                    <td>
+                        <span class="${badgeClass}">${situacaoLabel}</span>
+                    </td>
+                    <td>
+                        ${manutencaoBadge}
+                    </td>
+                    <td class="text-end">
+                        <div class="btn-group">
+                            <button class="btn btn-outline-glass btn-sm" onclick="abrirDetalhes(${eq.id})" title="Ver Propriedades">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <a href="/admin/equipamentos/${eq.id}/editar" class="btn btn-outline-glass btn-sm" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <button class="btn btn-outline-danger btn-sm" onclick="desativarEquipamento(${eq.id}, '${eq.numero_serie}')" title="Desativar">
+                                <i class="bi bi-slash-circle"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function formatarSituacao(s) {
+        const mapa = {
+            'operacional': 'Operacional',
+            'mau_funcionamento': 'Mau Funcionamento',
+            'manutencao': 'Manutenção',
+            'nao_instalado': 'Não Instalado',
+            'furtado': 'Furtado',
+            'desativado': 'Desativado'
+        };
+        return mapa[s] || s;
+    }
+
+    function formatarTipo(t) {
+        return t.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+
+    function abrirDetalhes(id) {
+        const eq = equipamentosList.find(e => e.id === id);
+        if (!eq) return;
+
+        document.getElementById('modal-titulo').textContent = `${formatarTipo(eq.tipo)} — ${eq.numero_serie}`;
+        document.getElementById('modal-btn-editar').href = `/admin/equipamentos/${eq.id}/editar`;
+
+        let propsHtml = '<span class="text-muted small">Nenhuma propriedade configurada.</span>';
+        if (eq.propriedades && eq.propriedades.length > 0) {
+            propsHtml = eq.propriedades.map(p => `
+                <div class="col-sm-6 mb-2">
+                    <div class="p-2 rounded bg-dark border border-secondary border-opacity-25">
+                        <small class="text-muted d-block text-uppercase" style="font-size:0.7rem;">${p.chave.replace(/_/g, ' ')}</small>
+                        <span class="font-monospace text-info">${p.valor}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        document.getElementById('modal-corpo').innerHTML = `
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <small class="text-muted d-block">Marca / Modelo</small>
+                    <span class="text-light fw-semibold">${eq.marca} ${eq.modelo}</span>
+                </div>
+                <div class="col-md-4">
+                    <small class="text-muted d-block">Órgão Responsável</small>
+                    <span class="text-light fw-semibold">${eq.orgao_responsavel}</span>
+                </div>
+                <div class="col-md-4">
+                    <small class="text-muted d-block">Coordenadas GPS</small>
+                    <span class="text-info font-monospace">${eq.latitude}, ${eq.longitude}</span>
+                </div>
+                <div class="col-12">
+                    <small class="text-muted d-block">Endereço Completo</small>
+                    <span class="text-light">${eq.localizacao_rua}, ${eq.localizacao_referencia ? '(' + eq.localizacao_referencia + ') - ' : ''}${eq.localizacao_bairro}, ${eq.localizacao_cidade}/${eq.localizacao_uf} ${eq.localizacao_cep ? ' - CEP ' + eq.localizacao_cep : ''}</span>
+                </div>
+            </div>
+
+            <h6 class="text-info fw-bold mt-4 mb-2"><i class="bi bi-sliders me-1"></i> Propriedades Específicas do Dispositivo</h6>
+            <div class="row">
+                ${propsHtml}
+            </div>
+        `;
+
+        modalDetalhesEl.show();
+    }
+
+    async function desativarEquipamento(id, numeroSerie) {
+        if (!confirm(`Deseja realmente desativar o equipamento '${numeroSerie}'?`)) return;
+
+        try {
+            await apiFetch(`/api/equipamentos/${id}`, { method: 'DELETE' });
+            showToast(`Equipamento '${numeroSerie}' desativado com sucesso.`, 'success');
+            carregarEquipamentos();
+        } catch (err) {}
+    }
+
+    document.getElementById('btn-aplicar-filtros').addEventListener('click', carregarEquipamentos);
+    document.getElementById('btn-limpar-filtros').addEventListener('click', () => {
+        document.getElementById('filtro-busca').value = '';
+        document.getElementById('filtro-tipo').value = '';
+        document.getElementById('filtro-situacao').value = '';
+        document.getElementById('filtro-manutencao').value = '';
+        carregarEquipamentos();
+    });
+
+    document.getElementById('filtro-busca').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') carregarEquipamentos();
+    });
+
+    document.addEventListener('DOMContentLoaded', carregarEquipamentos);
+</script>
+{% endblock %}
