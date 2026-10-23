@@ -10,6 +10,8 @@ from app.schemas.equipamento import (
     EquipamentoCreate,
     EquipamentoResponse,
     EquipamentoUpdate,
+    HistoricoManutencaoCreate,
+    HistoricoManutencaoResponse,
 )
 from app.services.equipamento_service import EquipamentoService
 
@@ -117,3 +119,38 @@ def delete_equipamento(
     service = EquipamentoService(db)
     deleted = service.delete_equipamento(equipamento_id)
     return EquipamentoResponse.model_validate(deleted)
+
+
+@router.get(
+    "/{equipamento_id}/historico",
+    response_model=List[HistoricoManutencaoResponse],
+    summary="Histórico de Manutenções do Equipamento"
+)
+def get_historico_equipamento(
+    equipamento_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Retorna o histórico completo de manutenções, mudanças de situação, custos e tempo de inatividade."""
+    service = EquipamentoService(db)
+    historico = service.get_historico(equipamento_id)
+    return [HistoricoManutencaoResponse.model_validate(h) for h in historico]
+
+
+@router.post(
+    "/{equipamento_id}/historico",
+    response_model=HistoricoManutencaoResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Registrar Nova Intervenção / Manutenção"
+)
+def create_historico_manutencao(
+    equipamento_id: int,
+    data: HistoricoManutencaoCreate,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """Registra uma intervenção técnica de manutenção no equipamento, atualizando a situação operacional."""
+    service = EquipamentoService(db)
+    novo_historico = service.add_historico(equipamento_id, data)
+    return HistoricoManutencaoResponse.model_validate(novo_historico)
+

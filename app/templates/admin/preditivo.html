@@ -1,0 +1,384 @@
+{% extends "base.html" %}
+
+{% block title %}Cidade Preditiva — PROMETHEUS F.O.G.O.{% endblock %}
+
+{% block extra_head %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<style>
+    .preditivo-kpi-card {
+        background: rgba(18, 24, 38, 0.7);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 1.1rem 1.25rem;
+        transition: transform 0.2s ease, border-color 0.2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .preditivo-kpi-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(6, 182, 212, 0.4);
+    }
+    .preditivo-kpi-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--accent-cyan, #06b6d4), transparent);
+    }
+    .risk-badge-critico {
+        background: rgba(239, 68, 68, 0.2);
+        color: #f87171;
+        border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+    .risk-badge-alto {
+        background: rgba(245, 158, 11, 0.2);
+        color: #fbbf24;
+        border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+    .risk-badge-moderado {
+        background: rgba(59, 130, 246, 0.2);
+        color: #60a5fa;
+        border: 1px solid rgba(59, 130, 246, 0.4);
+    }
+    .risk-badge-baixo {
+        background: rgba(16, 185, 129, 0.2);
+        color: #34d399;
+        border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+    .correlacao-card {
+        background: rgba(30, 27, 75, 0.4);
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+    }
+    .prioridade-card {
+        background: rgba(18, 24, 38, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        padding: 0.9rem;
+        margin-bottom: 0.75rem;
+        transition: all 0.2s ease;
+    }
+    .prioridade-card:hover {
+        border-color: rgba(6, 182, 212, 0.4);
+        background: rgba(22, 30, 48, 0.95);
+    }
+    .nav-pills-custom .nav-link {
+        color: var(--text-secondary, #94a3b8);
+        border-radius: 20px;
+        padding: 0.35rem 0.9rem;
+        font-size: 0.82rem;
+        font-weight: 500;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .nav-pills-custom .nav-link.active {
+        background: #06b6d4;
+        color: #0b1120;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-3">
+
+    <!-- Header Section -->
+    <div class="row align-items-center mb-4">
+        <div class="col-md-7">
+            <h2 class="fw-bold text-light mb-1 d-flex align-items-center gap-2">
+                <i class="bi bi-graph-up-arrow text-info"></i> Cidade Preditiva — Inteligência Operacional
+            </h2>
+            <p class="text-secondary small mb-0">
+                Antecipação de falhas em infraestrutura, mapas de risco por período, projeção de custos e reforço proativo de equipes.
+            </p>
+        </div>
+        <div class="col-md-5 text-md-end mt-3 mt-md-0 d-flex justify-content-md-end align-items-center gap-2">
+            <a href="/admin/dashboard" class="btn btn-outline-glass btn-sm" title="Voltar à Central de Operações">
+                <i class="bi bi-grid-1x2 me-1"></i> Central em Tempo Real
+            </a>
+            <button id="btn-refresh-preditivo" class="btn btn-cyan btn-sm text-dark fw-bold" onclick="carregarDadosPreditivos()">
+                <i class="bi bi-arrow-repeat me-1"></i> Atualizar Previsões
+            </button>
+        </div>
+    </div>
+
+    <!-- Row 1: Executive Predictive KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="preditivo-kpi-card">
+                <div class="text-muted small fw-semibold mb-1">Maior Risco Atual</div>
+                <div class="fs-4 fw-bold text-danger" id="kpi-bairro-risco">--</div>
+                <small class="text-muted d-block mt-1">Score: <span id="kpi-score-risco" class="fw-bold text-warning">--</span> / 100</small>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="preditivo-kpi-card">
+                <div class="text-muted small fw-semibold mb-1">Risco Iminente de Falha</div>
+                <div class="fs-4 fw-bold text-warning" id="kpi-falhas-iminentes">--</div>
+                <small class="text-muted d-block mt-1"><i class="bi bi-exclamation-triangle text-warning me-1"></i>Equipamentos &gt;50%</small>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="preditivo-kpi-card">
+                <div class="text-muted small fw-semibold mb-1">Alertas Preventivos</div>
+                <div class="fs-4 fw-bold text-light" id="kpi-alertas-preventivos">--</div>
+                <small class="text-info d-block mt-1"><i class="bi bi-shield-check me-1"></i>Ações Recomendadas</small>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="preditivo-kpi-card">
+                <div class="text-muted small fw-semibold mb-1">Projeção Custo (30d)</div>
+                <div class="fs-4 fw-bold text-light" id="kpi-custo-30d">R$ --</div>
+                <small class="text-muted d-block mt-1"><i class="bi bi-cash-stack text-success me-1"></i>Orçamento Estimado</small>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="preditivo-kpi-card">
+                <div class="text-muted small fw-semibold mb-1">Zonas de Correlação</div>
+                <div class="fs-4 fw-bold text-purple" style="color: #a78bfa;" id="kpi-zonas-correlacao">--</div>
+                <small class="text-muted d-block mt-1"><i class="bi bi-diagram-3 text-purple me-1"></i>Falhas Coletivas</small>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="preditivo-kpi-card">
+                <div class="text-muted small fw-semibold mb-1">Fila de Implantação</div>
+                <div class="fs-4 fw-bold text-info" id="kpi-fila-instalacao">--</div>
+                <small class="text-muted d-block mt-1"><i class="bi bi-hourglass-split text-info me-1"></i>Aguardando Campo</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="row g-3">
+
+        <!-- Left/Main Column: Map & Analysis Charts -->
+        <div class="col-xl-8 col-lg-7">
+
+            <!-- Card 1: Interactive Predictive Risk Map -->
+            <div class="glass-panel p-3 mb-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                    <div>
+                        <h5 class="fw-bold text-light mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-geo-alt text-info"></i> Mapa Espacial de Risco & Zonas Críticas
+                        </h5>
+                        <small class="text-muted">Cruzamento geoespacial de ocorrências, calor de risco e infraestrutura correlacionada.</small>
+                    </div>
+
+                    <!-- Filter by Time of Day -->
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="text-muted small mb-0 d-none d-sm-inline">Período:</label>
+                        <ul class="nav nav-pills nav-pills-custom gap-1" id="pills-periodo">
+                            <li class="nav-item">
+                                <button class="nav-link active" onclick="filtrarMapaPeriodo('todos')">Todos</button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" onclick="filtrarMapaPeriodo('manha')">Manhã</button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" onclick="filtrarMapaPeriodo('tarde')">Tarde</button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" onclick="filtrarMapaPeriodo('noite')">Noite</button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" onclick="filtrarMapaPeriodo('madrugada')">Madrugada</button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Leaflet Map Container -->
+                <div id="map-preditivo" style="height: 480px; width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);"></div>
+
+                <!-- Legend of Map Layers -->
+                <div class="d-flex flex-wrap align-items-center justify-content-between mt-2 pt-2 border-top border-secondary border-opacity-25 small text-muted">
+                    <div class="d-flex align-items-center gap-3">
+                        <span><span class="d-inline-block rounded-circle me-1" style="width:10px; height:10px; background:#ef4444;"></span> Alto Risco (&gt;70)</span>
+                        <span><span class="d-inline-block rounded-circle me-1" style="width:10px; height:10px; background:#f59e0b;"></span> Risco Médio (45-70)</span>
+                        <span><span class="d-inline-block rounded-circle me-1" style="width:10px; height:10px; background:#10b981;"></span> Estável (&lt;45)</span>
+                        <span><span class="d-inline-block rounded-circle me-1" style="width:10px; height:10px; background:#8b5cf6;"></span> Zona de Correlação</span>
+                    </div>
+                    <div>
+                        <span class="text-info"><i class="bi bi-info-circle me-1"></i>Clique nas regiões ou zonas para exibir diagnóstico explicável</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: Cost Projections Chart (P3-PRED-05) -->
+            <div class="glass-panel p-3 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="fw-bold text-light mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-cash-stack text-success"></i> Projeção Financeira de Manutenção (30, 60 e 90 Dias)
+                        </h5>
+                        <small class="text-muted">Comparativo entre gastos reais históricos e projeção orçamentária preventiva baseada em probabilidade de falhas.</small>
+                    </div>
+                    <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-50">
+                        PLANEJAMENTO ORÇAMENTÁRIO
+                    </span>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <div class="p-2 rounded bg-dark border border-secondary border-opacity-25 text-center">
+                            <span class="text-secondary small">Próximos 30 Dias</span>
+                            <h5 class="fw-bold text-light mb-0" id="cost-proj-30">R$ --</h5>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-2 rounded bg-dark border border-secondary border-opacity-25 text-center">
+                            <span class="text-secondary small">Próximos 60 Dias</span>
+                            <h5 class="fw-bold text-light mb-0" id="cost-proj-60">R$ --</h5>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-2 rounded bg-dark border border-secondary border-opacity-25 text-center">
+                            <span class="text-secondary small">Próximos 90 Dias</span>
+                            <h5 class="fw-bold text-light mb-0" id="cost-proj-90">R$ --</h5>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart.js Canvas -->
+                <div style="height: 280px; width: 100%;">
+                    <canvas id="chart-custos-projecao"></canvas>
+                </div>
+                <div id="cost-explanation" class="small text-muted mt-2 fst-italic"></div>
+            </div>
+
+            <!-- Card 3: Correlation Zones (P3-PRED-04) -->
+            <div class="glass-panel p-3 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="fw-bold text-light mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-diagram-3" style="color: #a78bfa;"></i> Zonas de Correlação de Falhas Compartilhadas
+                        </h5>
+                        <small class="text-muted">Detecção de equipamentos distintos que falham simultaneamente, revelando gargalos de infraestrutura (energia, rede, etc.).</small>
+                    </div>
+                </div>
+                <div id="container-correlacoes" class="row g-2">
+                    <div class="text-center py-4 text-muted small">Carregando correlações de falha...</div>
+                </div>
+            </div>
+
+            <!-- Card 4: Installation Priority (P3-PRED-06) -->
+            <div class="glass-panel p-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="fw-bold text-light mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-sort-numeric-down text-info"></i> Fila Ranqueada de Prioridade de Instalação
+                        </h5>
+                        <small class="text-muted">Cruzamento do índice de risco da região com o tempo de espera do equipamento para ordenação inteligente.</small>
+                    </div>
+                    <span class="badge bg-info bg-opacity-25 text-info border border-info border-opacity-50">
+                        OTIMIZAÇÃO DE CAMPO
+                    </span>
+                </div>
+                <div id="container-prioridade-instalacao">
+                    <div class="text-center py-4 text-muted small">Carregando prioridades de implantação...</div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Predictions, Agent Reinforcement & Preventive Alerts -->
+        <div class="col-xl-4 col-lg-5">
+
+            <!-- Card: Predicted Equipment Failures (P3-PRED-01 / MTBF) -->
+            <div class="glass-panel p-3 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="fw-bold text-light mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-clock-history text-warning"></i> Previsão de Falha (MTBF)
+                    </h6>
+                    <span class="badge bg-warning bg-opacity-25 text-warning" style="font-size:0.65rem;">MODELO DE CONFIABILIDADE</span>
+                </div>
+                <p class="text-secondary small mb-3">Equipamentos com padrão recorrente e data estimada da próxima quebra.</p>
+
+                <div id="container-previsoes-falha" style="max-height: 400px; overflow-y: auto;">
+                    <div class="text-center py-4 text-muted small">Analisando telemetria e ciclos MTBF...</div>
+                </div>
+            </div>
+
+            <!-- Card: Agent Reinforcement Recommendations (P3-PRED-02) -->
+            <div class="glass-panel p-3 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="fw-bold text-light mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-person-plus-fill text-info"></i> Reforço Recomendado de Equipes
+                    </h6>
+                    <span class="badge bg-info bg-opacity-25 text-info" style="font-size:0.65rem;">DIMENSIONAMENTO</span>
+                </div>
+                <p class="text-secondary small mb-3">Recomendações cruzando probabilidade de incidentes com presença de agentes.</p>
+
+                <div id="container-reforco-agentes" style="max-height: 380px; overflow-y: auto;">
+                    <div class="text-center py-4 text-muted small">Calculando demanda operacional por região...</div>
+                </div>
+            </div>
+
+            <!-- Card: Preventive Alerts (P3-PRED-01) -->
+            <div class="glass-panel p-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="fw-bold text-light mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-exclamation text-danger"></i> Alertas Preventivos
+                    </h6>
+                    <span class="badge bg-danger bg-opacity-25 text-danger" style="font-size:0.65rem;">PROATIVIDADE</span>
+                </div>
+                <p class="text-secondary small mb-3">Avisos automatizados para evitar paralisações de serviço.</p>
+
+                <div id="container-alertas-preventivos" style="max-height: 380px; overflow-y: auto;">
+                    <div class="text-center py-4 text-muted small">Carregando alertas preditivos...</div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Modal: Explicabilidade das Previsões (P3-TEST-05) -->
+<div class="modal fade" id="modalExplicabilidade" tabindex="-1" aria-labelledby="modalExplicabilidadeLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-panel border-info border-opacity-50">
+            <div class="modal-header border-bottom border-secondary border-opacity-25">
+                <h5 class="modal-title text-light fw-bold" id="modalExplicabilidadeLabel">
+                    <i class="bi bi-cpu text-info me-2"></i> Explicabilidade do Modelo Preditivo
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <h6 class="fw-bold text-info" id="modal-item-titulo">Diagnóstico</h6>
+                    <p class="small text-muted mb-0" id="modal-item-subtitulo"></p>
+                </div>
+                <div class="p-3 rounded bg-dark border border-secondary border-opacity-25 mb-3">
+                    <div class="small fw-semibold text-light mb-1">Fundamentação Analítica:</div>
+                    <div class="small text-secondary" id="modal-item-explicacao"></div>
+                </div>
+                <div class="p-3 rounded bg-info bg-opacity-10 border border-info border-opacity-25">
+                    <div class="small fw-semibold text-info mb-1"><i class="bi bi-lightbulb me-1"></i> Ação Preventiva Recomendada:</div>
+                    <div class="small text-light" id="modal-item-acao"></div>
+                </div>
+            </div>
+            <div class="modal-footer border-top border-secondary border-opacity-25">
+                <button type="button" class="btn btn-outline-glass btn-sm" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- PROMETHEUS Preditivo Controller -->
+<script src="/static/js/preditivo.js"></script>
+{% endblock %}

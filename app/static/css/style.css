@@ -330,6 +330,213 @@ body {
   margin: 0.15rem;
 }
 
+/* ==========================================================================
+   PARTE 2 — Central de Operações & Leaflet Styling
+   ========================================================================== */
+
+#map {
+  width: 100%;
+  height: 620px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: #0b1120;
+  z-index: 1;
+}
+
+/* Leaflet Custom Marker Icons */
+.dark-tiles {
+  filter: brightness(0.65) invert(1) contrast(2.4) hue-rotate(200deg) saturate(0.28);
+}
+
+.custom-map-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  transition: transform 0.2s ease;
+}
+
+.custom-map-marker:hover {
+  transform: scale(1.25);
+  z-index: 9999 !important;
+}
+
+/* Marker Situation Colors */
+.marker-operacional {
+  background: #10b981;
+  border: 2px solid #34d399;
+}
+
+.marker-manutencao {
+  background: #f59e0b;
+  border: 2px solid #fbbf24;
+}
+
+.marker-mau_funcionamento {
+  background: #ef4444;
+  border: 2px solid #f87171;
+}
+
+.marker-furtado {
+  background: #ec4899;
+  border: 2px solid #f472b6;
+}
+
+.marker-desativado {
+  background: #4b5563;
+  border: 2px solid #9ca3af;
+}
+
+.marker-nao_instalado {
+  background: #8b5cf6;
+  border: 2px solid #a78bfa;
+}
+
+/* Agent Marker Colors */
+.marker-agente-transito {
+  background: #0284c7;
+  border: 2px solid #38bdf8;
+}
+
+.marker-agente-guarda {
+  background: #4f46e5;
+  border: 2px solid #818cf8;
+}
+
+.marker-agente-pm {
+  background: #1e3a8a;
+  border: 2px solid #60a5fa;
+}
+
+/* Marker Critical Radar Pulse Effect (P2-ALERT-03) */
+.marker-pulse-critical {
+  position: relative;
+}
+
+.marker-pulse-critical::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  right: -6px;
+  bottom: -6px;
+  border-radius: 50%;
+  border: 2px solid #ef4444;
+  animation: radar-pulse 1.8s infinite;
+}
+
+@keyframes radar-pulse {
+  0% { transform: scale(0.9); opacity: 1; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* Leaflet Dark Popup Customization */
+.leaflet-popup-content-wrapper {
+  background: rgba(15, 23, 42, 0.95) !important;
+  backdrop-filter: blur(14px) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
+  padding: 0 !important;
+}
+
+.leaflet-popup-content {
+  margin: 1rem !important;
+  line-height: 1.4 !important;
+}
+
+.leaflet-popup-tip {
+  background: rgba(15, 23, 42, 0.95) !important;
+}
+
+.leaflet-container {
+  font-family: var(--font-main) !important;
+}
+
+/* KPI Stat Cards */
+.kpi-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 1.1rem;
+  transition: var(--transition-smooth);
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(6, 182, 212, 0.3);
+  box-shadow: var(--shadow-neon);
+}
+
+.kpi-value {
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.kpi-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Alert Item in Sidebar */
+.alert-card-item {
+  background: rgba(15, 23, 42, 0.6);
+  border-left: 4px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 0.55rem;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.alert-card-item:hover {
+  background: rgba(30, 41, 59, 0.8);
+  transform: translateX(4px);
+}
+
+.alert-card-critico {
+  border-left-color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.alert-card-urgente {
+  border-left-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.alert-card-atencao {
+  border-left-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.08);
+}
+
+/* Region Health Item */
+.region-item {
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.region-item:hover {
+  padding-left: 0.4rem;
+}
+
+.progress-health {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
 /* Footer */
 footer {
   margin-top: auto;

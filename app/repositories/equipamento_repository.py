@@ -1,5 +1,6 @@
+from datetime import datetime, timezone
 from typing import List, Optional, Tuple
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, desc
 from sqlalchemy.orm import Session
 from app.models.equipamento import (
     Equipamento,
@@ -8,7 +9,9 @@ from app.models.equipamento import (
     ManutencaoTipo,
 )
 from app.models.equipamento_propriedade import EquipamentoPropriedade
+from app.models.historico_equipamento import HistoricoEquipamento
 from app.schemas.equipamento import EquipamentoCreate, EquipamentoUpdate
+
 
 
 class EquipamentoRepository:
@@ -135,3 +138,36 @@ class EquipamentoRepository:
             .order_by(Equipamento.orgao_responsavel)
         )
         return list(self.db.execute(stmt).scalars().all())
+
+    def get_historico(self, equipamento_id: int) -> List[HistoricoEquipamento]:
+        stmt = (
+            select(HistoricoEquipamento)
+            .where(HistoricoEquipamento.equipamento_id == equipamento_id)
+            .order_by(desc(HistoricoEquipamento.data_mudanca))
+        )
+        return list(self.db.execute(stmt).scalars().all())
+
+    def add_historico(
+        self,
+        equipamento_id: int,
+        situacao_anterior: Optional[EquipamentoSituacao],
+        situacao_nova: EquipamentoSituacao,
+        motivo: str,
+        custo_manutencao: float = 0.0,
+        tempo_inatividade_horas: float = 0.0,
+        data_mudanca: Optional[datetime] = None
+    ) -> HistoricoEquipamento:
+        hist = HistoricoEquipamento(
+            equipamento_id=equipamento_id,
+            situacao_anterior=situacao_anterior,
+            situacao_nova=situacao_nova,
+            motivo=motivo,
+            custo_manutencao=custo_manutencao,
+            tempo_inatividade_horas=tempo_inatividade_horas,
+            data_mudanca=data_mudanca or datetime.now(timezone.utc)
+        )
+        self.db.add(hist)
+        self.db.commit()
+        self.db.refresh(hist)
+        return hist
+

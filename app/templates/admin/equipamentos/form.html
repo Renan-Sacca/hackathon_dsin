@@ -160,6 +160,100 @@
                 </div>
             </form>
         </div>
+
+        {% if is_edit %}
+        <!-- Seção: Histórico de Manutenções e Intervenções Técnicas -->
+        <div class="glass-panel p-4 p-md-5 mb-5" id="historico">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                <div>
+                    <h5 class="text-info fw-bold mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-clock-history"></i> Histórico de Manutenções & Intervenções
+                    </h5>
+                    <small class="text-secondary">Registro histórico de transições de situação, vistorias técnicas, custos e paradas operacionais.</small>
+                </div>
+                <button class="btn btn-cyan btn-sm text-dark fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAddManutencaoForm">
+                    <i class="bi bi-plus-circle me-1"></i> + Registrar Manutenção
+                </button>
+            </div>
+
+            <!-- KPI Summary -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="p-3 rounded bg-dark border border-secondary border-opacity-25 text-center">
+                        <span class="text-secondary small d-block mb-1">Total de Intervenções</span>
+                        <h4 class="fw-bold text-light mb-0" id="form-hist-total">0</h4>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 rounded bg-dark border border-secondary border-opacity-25 text-center">
+                        <span class="text-secondary small d-block mb-1">Custo Total de Manutenção</span>
+                        <h4 class="fw-bold text-success mb-0" id="form-hist-custo">R$ 0,00</h4>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 rounded bg-dark border border-secondary border-opacity-25 text-center">
+                        <span class="text-secondary small d-block mb-1">Horas Parado (Downtime)</span>
+                        <h4 class="fw-bold text-warning mb-0" id="form-hist-horas">0.0 h</h4>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form para adicionar manutenção -->
+            <div class="collapse mb-4" id="collapseAddManutencaoForm">
+                <div class="card bg-dark border border-info border-opacity-25 p-3">
+                    <h6 class="text-info fw-bold mb-3"><i class="bi bi-tools me-1"></i> Nova Intervenção Técnica</h6>
+                    <form id="form-add-manutencao-page" onsubmit="salvarManutencaoPagina(event)">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label small" for="page-hist-situacao">Nova Situação *</label>
+                                <select id="page-hist-situacao" class="form-select form-select-sm" required>
+                                    <option value="operacional">Operacional (Restaurado)</option>
+                                    <option value="manutencao">Em Manutenção</option>
+                                    <option value="mau_funcionamento">Mau Funcionamento</option>
+                                    <option value="desativado">Desativado</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small" for="page-hist-custo">Custo (R$)</label>
+                                <input type="number" step="0.01" min="0" id="page-hist-custo" class="form-control form-control-sm" placeholder="0.00" value="0.00">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small" for="page-hist-horas">Inatividade (horas)</label>
+                                <input type="number" step="0.5" min="0" id="page-hist-horas" class="form-control form-control-sm" placeholder="0" value="0">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small" for="page-hist-motivo">Descrição do Serviço Realizado *</label>
+                                <input type="text" id="page-hist-motivo" class="form-control form-control-sm" placeholder="Ex: Substituição de placas e aferição metrológica" required>
+                            </div>
+                            <div class="col-12 text-end">
+                                <button type="submit" class="btn btn-cyan btn-sm text-dark fw-bold">
+                                    Salvar Intervenção
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Tabela Linha do Tempo -->
+            <div class="table-responsive">
+                <table class="table table-dark table-hover table-sm align-middle mb-0" style="font-size:0.85rem;">
+                    <thead class="table-secondary text-uppercase small" style="font-size: 0.72rem;">
+                        <tr>
+                            <th>Data / Hora</th>
+                            <th>Transição de Situação</th>
+                            <th>Descrição / Motivo</th>
+                            <th class="text-end">Custo (R$)</th>
+                            <th class="text-end">Parado (h)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="form-hist-tbody">
+                        <tr><td colspan="5" class="text-center py-4 text-muted">Carregando histórico de manutenções...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
@@ -291,5 +385,109 @@
             btnSalvar.innerHTML = '<i class="bi bi-check-lg"></i> Salvar Equipamento';
         }
     });
+
+    // Histórico de Manutenções da Página de Edição
+    async function carregarHistoricoPagina() {
+        if (!isEdit || !equipamentoId) return;
+        const tbody = document.getElementById('form-hist-tbody');
+        if (!tbody) return;
+
+        try {
+            const historico = await apiFetch(`/api/equipamentos/${equipamentoId}/historico`);
+            if (!historico || historico.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">Nenhum histórico de manutenção registrado para este equipamento.</td></tr>';
+                document.getElementById('form-hist-total').textContent = '0';
+                document.getElementById('form-hist-custo').textContent = 'R$ 0,00';
+                document.getElementById('form-hist-horas').textContent = '0.0 h';
+                return;
+            }
+
+            const totalInterv = historico.length;
+            const custoTotal = historico.reduce((acc, h) => acc + (h.custo_manutencao || 0), 0);
+            const horasTotal = historico.reduce((acc, h) => acc + (h.tempo_inatividade_horas || 0), 0);
+
+            document.getElementById('form-hist-total').textContent = totalInterv;
+            document.getElementById('form-hist-custo').textContent = `R$ ${custoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+            document.getElementById('form-hist-horas').textContent = `${horasTotal.toFixed(1)} h`;
+
+            tbody.innerHTML = historico.map(h => {
+                const dataFormatada = new Date(h.data_mudanca).toLocaleString('pt-BR');
+                const badgeAnterior = h.situacao_anterior ? `<span class="badge bg-secondary" style="font-size:0.65rem;">${formatarSituacao(h.situacao_anterior)}</span>` : '<span class="text-muted small">Início</span>';
+                const badgeNova = `<span class="badge-situacao badge-${h.situacao_nova.replace('_', '-')}" style="font-size:0.65rem;">${formatarSituacao(h.situacao_nova)}</span>`;
+
+                return `
+                    <tr>
+                        <td class="font-monospace text-secondary" style="font-size:0.75rem;">${dataFormatada}</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-1">
+                                ${badgeAnterior} <i class="bi bi-arrow-right text-muted small"></i> ${badgeNova}
+                            </div>
+                        </td>
+                        <td class="text-light">${h.motivo || 'Sem descrição'}</td>
+                        <td class="text-end font-monospace text-success fw-bold">${h.custo_manutencao > 0 ? 'R$ ' + h.custo_manutencao.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '—'}</td>
+                        <td class="text-end font-monospace text-warning">${h.tempo_inatividade_horas > 0 ? h.tempo_inatividade_horas.toFixed(1) + 'h' : '0h'}</td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (err) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-danger">Erro ao carregar histórico de manutenções.</td></tr>';
+        }
+    }
+
+    async function salvarManutencaoPagina(e) {
+        e.preventDefault();
+        if (!isEdit || !equipamentoId) return;
+
+        const situacao_nova = document.getElementById('page-hist-situacao').value;
+        const motivo = document.getElementById('page-hist-motivo').value.trim();
+        const custo_manutencao = parseFloat(document.getElementById('page-hist-custo').value) || 0.0;
+        const tempo_inatividade_horas = parseFloat(document.getElementById('page-hist-horas').value) || 0.0;
+
+        try {
+            await apiFetch(`/api/equipamentos/${equipamentoId}/historico`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    situacao_nova,
+                    motivo,
+                    custo_manutencao,
+                    tempo_inatividade_horas
+                })
+            });
+
+            showToast('Intervenção de manutenção registrada com sucesso!', 'success');
+            document.getElementById('page-hist-motivo').value = '';
+            document.getElementById('situacao').value = situacao_nova;
+
+            const badgeTopo = document.getElementById('badge-situacao-topo');
+            if (badgeTopo) {
+                badgeTopo.className = `badge-situacao badge-${situacao_nova.replace('_', '-')}`;
+                badgeTopo.textContent = situacao_nova.toUpperCase();
+            }
+
+            const collapseEl = bootstrap.Collapse.getInstance(document.getElementById('collapseAddManutencaoForm'));
+            if (collapseEl) collapseEl.hide();
+
+            await carregarHistoricoPagina();
+        } catch (err) {
+            showToast('Erro ao salvar intervenção.', 'danger');
+        }
+    }
+
+    function formatarSituacao(s) {
+        const mapa = {
+            'operacional': 'Operacional',
+            'mau_funcionamento': 'Mau Funcionamento',
+            'manutencao': 'Manutenção',
+            'nao_instalado': 'Não Instalado',
+            'furtado': 'Furtado',
+            'desativado': 'Desativado'
+        };
+        return mapa[s] || s;
+    }
+
+    // Carregar histórico se em modo de edição
+    if (isEdit) {
+        carregarHistoricoPagina();
+    }
 </script>
 {% endblock %}

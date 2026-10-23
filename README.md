@@ -3,6 +3,9 @@
 
 Sistema inteligente de monitoramento urbano para catalogação, operação em tempo real e análise preditiva de equipamentos de segurança e trânsito da cidade.
 
+> 📘 **DOCUMENTAÇÃO VISUAL COMPLETA DISPONÍVEL:**
+> * Para ver as **telas com prints reais**, recortes de componentes, diagramas e explicação detalhada de cada endpoint, consulte o: **[Guia Completo do Sistema, Telas & Endpoints (README_GUIA_DO_SISTEMA.md)**.
+
 ---
 
 ## 🛠 Stack Tecnológica
@@ -133,10 +136,19 @@ DSIN HACKATON/
 ├── 📄 requirements.txt              # Dependências Python
 ├── 📄 .env                          # Variáveis de ambiente
 ├── 📄 .dockerignore                 # Arquivos ignorados pelo Docker
-├── 📄 README.md                     # Este arquivo
+├── 📄 README.md                     # Este arquivo principal
+├── 📄 README_GUIA_DO_SISTEMA.md     # 📘 Manual completo com prints e endpoints
+├── 📄 mapa_funcionalidades_testes.md # 🗺️ Rastreabilidade edital e roteiro de testes
 ├── 📄 TASKS.md                      # Lista de tarefas do projeto
-├── 📄 seed_demo.py                  # Script de dados de demonstração
-├── 📄 seed_historico.py             # Script de histórico sintético (Parte 3)
+├── 📄 seed_demo.py                  # Script de dados de demonstração (50+ eq, 20+ ag)
+├── 📄 seed_historico.py             # Script de histórico sintético calibrado (Parte 3)
+│
+├── 📁 docs/                         # Documentação visual
+│   └── 📁 screenshots/              # 35+ capturas reais de telas e recortes
+│
+├── 📁 tests/                        # Suíte de Testes Automatizados (unittest)
+│   ├── 📄 test_historico.py         # Testes de histórico, custos e transições
+│   └── 📄 test_predictive.py        # 8 testes cobrindo MTBF, XAI, risco e custos
 │
 ├── 📁 app/                          # ← CÓDIGO DA APLICAÇÃO
    ├── 📄 __init__.py               # Marca 'app' como pacote Python
@@ -155,62 +167,66 @@ DSIN HACKATON/
    │   ├── 📄 __init__.py           # Exporta todos os modelos
    │   ├── 📄 user.py               # User (id, nome, email, senha, tipo)
    │   ├── 📄 equipamento.py        # Equipamento (tipo, situação, localização, etc.)
-   │   ├── 📄 equipamento_propriedade.py # Propriedades extras por tipo de equipamento
+   │   ├── 📄 equipamento_propriedade.py # Propriedades extras dinâmicas (JSON)
    │   ├── 📄 agente.py             # Agente (matrícula, tipo, órgão, situação)
-   │   ├── 📄 historico_equipamento.py  # Histórico de situações (Parte 3)
-   │   └── 📄 ocorrencia.py         # Ocorrências registradas (Parte 3)
+   │   ├── 📄 historico_equipamento.py  # Histórico de intervenções e custos (Parte 1 e 3)
+   │   └── 📄 ocorrencia.py         # Ocorrências geoespaciais por turno (Parte 3)
    │
-   ├── 📁 schemas/                  # Schemas Pydantic (validação)
+   ├── 📁 schemas/                  # Schemas Pydantic (validação e contratos)
    │   ├── 📄 __init__.py
    │   ├── 📄 user.py               # UserCreate, UserLogin, TokenResponse
    │   ├── 📄 equipamento.py        # EquipamentoCreate, EquipamentoUpdate, Response
    │   └── 📄 agente.py             # AgenteCreate, AgenteUpdate, AgenteResponse
    │
-   ├── 📁 repositories/             # Acesso ao banco (queries)
+   ├── 📁 repositories/             # Acesso ao banco (queries SQLAlchemy)
    │   ├── 📄 user_repository.py    # CRUD de User
    │   ├── 📄 equipamento_repository.py # CRUD + filtros de Equipamento
    │   ├── 📄 agente_repository.py  # CRUD + filtros de Agente
    │   ├── 📄 dashboard_repository.py   # Queries agregadas para métricas
    │   └── 📄 predictive_repository.py  # Queries históricas para preditivo (Parte 3)
    │
-   ├── 📁 services/                 # Regras de negócio
+   ├── 📁 services/                 # Regras de Negócio & Algoritmos
    │   ├── 📄 auth_service.py       # Registro e login
-   │   ├── 📄 equipamento_service.py # Validação, transição de situação
-   │   ├── 📄 agente_service.py     # Validação de matrícula, situação
-   │   ├── 📄 dashboard_service.py  # Cálculo de métricas e alertas
-   │   └── 📄 predictive_service.py # Motor de análise preditiva (Parte 3)
+   │   ├── 📄 equipamento_service.py # Validação, transição de situação e gatilhos
+   │   ├── 📄 agente_service.py     # Validação de matrícula, situação e escalas
+   │   ├── 📄 dashboard_service.py  # Cálculo de métricas e alertas em tempo real
+   │   ├── 📄 predictive_service.py # Motor de análise preditiva (Risco, MTBF, XAI)
+   │   ├── 📄 correlacao_service.py # Detecção de falhas correlacionadas em infraestrutura
+   │   ├── 📄 custo_service.py      # Projeção orçamentária para 30, 60 e 90 dias
+   │   ├── 📄 reforco_service.py    # Dimensionamento proativo de equipes de campo
+   │   └── 📄 prioridade_instalacao_service.py # Score e fila de implantação
    │
-   ├── 📁 routers/                  # Endpoints da API
-   │   ├── 📄 auth.py               # POST /api/auth/register, /login
-   │   ├── 📄 equipamentos.py       # CRUD /api/equipamentos
+   ├── 📁 routers/                  # Endpoints da API REST
+   │   ├── 📄 auth.py               # POST /api/auth/login, /register, /logout
+   │   ├── 📄 equipamentos.py       # CRUD /api/equipamentos e /historico
    │   ├── 📄 agentes.py            # CRUD /api/agentes
-   │   ├── 📄 dashboard.py          # GET /api/dashboard/metricas, /mapa, /alertas
-   │   ├── 📄 predictive.py         # GET /api/preditivo/* (Parte 3)
-   │   └── 📄 pages.py              # Rotas HTML (login, dashboard, cadastros)
+   │   ├── 📄 dashboard.py          # GET /api/dashboard/metricas, /mapa, /alertas, /regioes
+   │   ├── 📄 predictive.py         # GET /api/preditivo/* (Risco, MTBF, Reforço, Custos)
+   │   └── 📄 pages.py              # Rotas HTML (login, dashboard, cadastros, preditivo)
    │
    ├── 📁 dependencies/             # Injeção de dependências
    │   └── 📄 auth.py               # get_current_user, require_admin
    │
-   ├── 📁 templates/                # HTML (Jinja2 + Bootstrap 5)
-   │   ├── 📄 base.html             # Layout base (navbar, sidebar, footer, alertas)
-   │   ├── 📄 login.html            # Tela de login
+   ├── 📁 templates/                # HTML (Jinja2 + Bootstrap 5 + Glassmorphism)
+   │   ├── 📄 base.html             # Layout base (navbar, sino de alertas, footer)
+   │   ├── 📄 login.html            # Tela de login com preenchimento facilitado
    │   └── 📁 admin/                # Páginas do administrador/operador
-   │       ├── 📄 dashboard.html    # Central de Operações (mapa + KPIs)
-   │       ├── 📄 preditivo.html    # Visão preditiva (Parte 3)
+   │       ├── 📄 dashboard.html    # Central de Operações (mapa + KPIs + alertas)
+   │       ├── 📄 preditivo.html    # Cidade Preditiva (mapa de risco, gráficos, fila)
    │       ├── 📁 equipamentos/
-   │       │   ├── 📄 lista.html    # Listagem com filtros e busca
-   │       │   └── 📄 form.html     # Cadastro/edição (campos dinâmicos por tipo)
+   │       │   ├── 📄 lista.html    # Listagem com modais de detalhes e histórico
+   │       │   └── 📄 form.html     # Cadastro/edição com campos adaptativos
    │       └── 📁 agentes/
    │           ├── 📄 lista.html    # Listagem de agentes com filtros
    │           └── 📄 form.html     # Cadastro/edição de agente
    │
    └── 📁 static/                   # Arquivos estáticos
        ├── 📁 css/
-       │   └── 📄 style.css         # Design system (dark theme, glassmorphism)
+       │   └── 📄 style.css         # Design system (Cyber dark theme, glassmorphism)
        └── 📁 js/
            ├── 📄 app.js            # Lógica global (fetch, toasts, loaders)
-           ├── 📄 dashboard.js      # Mapa Leaflet, KPIs, auto-refresh
-           └── 📄 preditivo.js      # Gráficos Chart.js, heatmap de risco (Parte 3)
+           ├── 📄 dashboard.js      # Mapa Leaflet, KPIs, auto-refresh (30s)
+           └── 📄 preditivo.js      # Gráficos Chart.js, mapa de risco e modal XAI
 ```
 
 ---
@@ -287,6 +303,37 @@ Armazena propriedades específicas por tipo de equipamento em formato chave-valo
 | `criado_em` | DateTime | Auto-preenchido |
 | `atualizado_em` | DateTime | Auto-preenchido |
 
+### `app/models/historico_equipamento.py` — Tabela `historico_equipamentos` (Partes 1 e 3)
+
+Registra o histórico de ciclo de vida, transições de estado, custos e horas de inatividade (*downtime*):
+
+| Coluna | Tipo | Descrição |
+|--------|------|-----------|
+| `id` | Integer (PK) | Identificador |
+| `equipamento_id` | FK → equipamentos | Equipamento relacionado |
+| `situacao_anterior` | Enum (nullable) | Situação antes da mudança |
+| `situacao_nova` | Enum | Nova situação cadastrada |
+| `data_mudanca` | DateTime | Carimbo de data/hora do evento |
+| `motivo` | String | Justificativa ou descrição do serviço |
+| `custo_manutencao` | Float | Custo financeiro da intervenção em R$ |
+| `tempo_inatividade_horas` | Float | Horas de indisponibilidade operacional (*downtime*) |
+
+### `app/models/ocorrencia.py` — Tabela `ocorrencias` (Parte 3)
+
+Base geoespacial e temporal de eventos urbanos que alimenta os modelos de risco e correlação preditiva:
+
+| Coluna | Tipo | Descrição |
+|--------|------|-----------|
+| `id` | Integer (PK) | Identificador |
+| `tipo` | Enum | acidente_transito, lentidao_congestionamento, furto_roubo, vandalismo, falha_semaforo, etc. |
+| `severidade` | Enum | baixa, media, alta, critica |
+| `data_hora` | DateTime | Timestamp do registro |
+| `bairro` | String | Bairro da ocorrência |
+| `latitude` | Float | Coordenada GPS latitude |
+| `longitude` | Float | Coordenada GPS longitude |
+| `equipamento_relacionado_id`| FK (nullable) | Equipamento próximo afetado |
+| `agente_responsavel_id` | FK (nullable) | Equipe destacada para atendimento |
+
 ---
 
 ## 🔄 Fluxo de Situação de Equipamento
@@ -321,7 +368,7 @@ Cadastro
 ## ⚙ Regras de Negócio
 
 ### 1. Transição de Situação de Equipamento
-- Equipamentos `furtado` ou `desativado` **não podem** voltar a `operacional` diretamente — requerem validação manual
+- Equipamentos `furtado` ou `desativado` **não podem** voltar a `operacional` diretamente — requerem validação e confirmação manual expressa
 - Mau funcionamento automaticamente aciona necessidade de manutenção `imediata`
 - Equipamentos com `proxima_manutencao` nos próximos 3 dias geram alerta `ATENÇÃO`
 
@@ -330,23 +377,81 @@ Cadastro
 - **URGENTE**: manutenção de tipo `imediata` pendente
 - **ATENÇÃO**: manutenção agendada para os próximos 3 dias
 
-### 3. Propriedades Dinâmicas por Tipo
-- Cada tipo de equipamento possui um conjunto específico de propriedades adicionais
-- Armazenadas em tabela chave-valor para máxima flexibilidade
+### 3. Modelos da Cidade Preditiva (Parte 3)
+- **MTBF & Previsão de Falhas:** Cálculo de tempo médio entre falhas baseado em histórico de 6 meses; probabilidade percentual de nova quebra e data estimada.
+- **Explainable AI (XAI):** Transparência total demonstrando as variáveis estatísticas utilizadas e indicando ações preventivas para os gestores.
+- **Reforço Proativo de Equipes:** Alocação de agentes cruzando risco regional por período com o efetivo em campo e determinando especialidade necessária (Trânsito vs Guarda).
+- **Zonas de Correlação:** Agrupamento geoespacial de falhas simultâneas em raio de 300m para diagnosticar causas de infraestrutura compartilhada (queda de energia, fibra cortada).
+- **Projeção Orçamentária:** Estimativa de custos de manutenção para 30, 60 e 90 dias com comparação visual em gráfico Chart.js.
+- **Fila Ranqueada de Instalação:** Priorização matemática ponderando 60% de risco do bairro de destino + 40% de tempo de espera.
 
-### 4. Soft Delete
-- Equipamentos e agentes **nunca são deletados** do banco
-- São **desativados** (campo `ativo = False`)
-- Preserva histórico e integridade referencial
+### 4. Propriedades Dinâmicas por Tipo
+- Cada tipo de equipamento possui um conjunto específico de propriedades adicionais injetadas dinamicamente
+- Armazenadas em tabela chave-valor para máxima flexibilidade sem migrações adicionais
 
-### 5. Permissões (RBAC)
-- **Admin**: acesso total — cadastros, edições, exclusões, configurações
-- **Operador**: acesso ao dashboard e consulta de equipamentos/agentes, sem exclusão
+### 5. Soft Delete
+- Equipamentos e agentes **nunca são deletados** fisicamente do banco
+- São **desativados** (campo `ativo = False`), preservando integridade referencial e auditoria
 
-### 6. Segurança
+### 6. Permissões (RBAC) & Segurança
+- **Admin**: acesso total — cadastros, edições, exclusões, histórico e calibração de modelos
+- **Operador**: acesso ao dashboard, consulta de ativos e visualização de alertas, sem privilégios de exclusão
 - **Proteção contra SQL Injection**: 100% das consultas utilizam SQLAlchemy ORM com parametrização automática
 - **Sanitização XSS**: camada de sanitização automática em todos os Schemas Pydantic
 - **JWT**: autenticação stateless com tokens de expiração configurável
+
+---
+
+## 🧪 Suíte de Testes Automatizados (43 Testes)
+
+O PROMETHEUS conta com uma suíte abrangente de **43 testes automatizados** baseada em `unittest` e asserções HTTP, cobrindo autenticação, regras de negócio de equipamentos e viaturas, integridade do dashboard em tempo real, integração de endpoints e todos os algoritmos preditivos:
+
+```powershell
+docker exec prometheus-app python -m unittest discover tests
+```
+
+Resultado verificado:
+```text
+...........................................
+----------------------------------------------------------------------
+Ran 43 tests in 5.116s
+
+OK
+```
+
+### Cobertura da Suíte de Testes:
+
+| Arquivo de Teste | Qtd. Testes | Escopo & Regras Validadas |
+| :--- | :---: | :--- |
+| **`tests/test_auth.py`** | **6** | Registro de operadores, hash bcrypt de senhas, validação de e-mails duplicados, login e emissão de tokens JWT, validação de payload/claims e bloqueio de usuários inativos. |
+| **`tests/test_equipamentos.py`** | **6** | Cadastro de ativos urbanos, unicidade de número de série, validação geográfica de coordenadas GPS (-90..90, -180..180), regra automática `MAU_FUNCIONAMENTO -> MANUTENCAO_IMEDIATA`, filtros múltiplos e soft delete. |
+| **`tests/test_agentes.py`** | **6** | Cadastro de agentes (Trânsito, Guarda Municipal, PM), validação de matrícula única, coordenadas GPS, atualização de turno/situação operacional, busca textual e soft delete. |
+| **`tests/test_dashboard.py`** | **4** | Agregação de KPIs executivos ao vivo, integridade dos marcadores geolocalizados de mapa para Leaflet, ordenação de alertas críticos ativos e cálculo da taxa de saúde operacional por bairro. |
+| **`tests/test_historico_manutencao.py`** | **3** | Consulta do histórico de intervenções, cálculo de tempo de inatividade (*downtime*), acúmulo financeiro de custos e auto-registro histórico em transições de situação. |
+| **`tests/test_preditivo.py`** | **8** | Modelos preditivos da Parte 3: matriz de risco regional por turno, MTBF e probabilidade de quebra, alertas preventivos por limiar crítico, explicabilidade da IA (XAI), zonas de falhas correlacionadas (raio 300m), projeção de custos (30/60/90 dias) e fila ponderada de instalação. |
+| **`tests/test_api_endpoints.py`** | **10** | Testes de integração HTTP contra o servidor ativo: Swagger/OpenAPI, ciclo de autenticação JWT Bearer, acesso a rotas protegidas (`/api/auth/me`), contratos do dashboard, listagem paginada de equipamentos e viaturas, e endpoints da Cidade Preditiva. |
+
+---
+
+## 📮 Postman Collection Automatizada
+
+Para testes funcionais de integração e demonstração dinâmica da API RESTful, o projeto disponibiliza uma coleção completa no padrão **Postman Collection v2.1.0**:
+
+📁 **Arquivo:** [`PROMETHEUS_API.postman_collection.json`](file:///c:/Users/renan/OneDrive/Desktop/DSIN%20HACKATON/PROMETHEUS_API.postman_collection.json)
+
+### Destaques e Automações da Coleção:
+1. **Captura Dinâmica de JWT no Login:**
+   - Ao executar a requisição `1. Autenticação & Sessão > Login`, um script de teste captura automaticamente o `access_token` retornado e atualiza a variável global `{{token}}`.
+   - Todas as requisições protegidas herdam autenticação `Bearer {{token}}` automaticamente.
+2. **Encadeamento Automático de IDs:**
+   - Criar um equipamento ou agente salva o ID gerado nas variáveis `{{createdEquipamentoId}}` e `{{createdAgenteId}}`, alimentando as requisições de consulta, edição, histórico e exclusão sem intervenção manual.
+3. **Asserções Automatizadas em Cada Endpoint:**
+   - Valida status HTTP (`200 OK`, `201 Created`), tempo de resposta (< 2000ms) e integridade dos schemas retornados.
+4. **Compatibilidade Total:**
+   - Pode ser importado diretamente no **Postman**, **Insomnia**, **Bruno**, extensão **Thunder Client (VS Code)** ou executado em pipeline CI/CD via **Newman CLI**:
+     ```powershell
+     npx newman run PROMETHEUS_API.postman_collection.json
+     ```
 
 ---
 

@@ -58,7 +58,8 @@ pip-delete-this-directory.txt
 *.swp
 *.swo
 *~
-
+TASKS.md
+mapa_funcionalidades_testes.md
 # Sistema Operacional
 .DS_Store
 Thumbs.db

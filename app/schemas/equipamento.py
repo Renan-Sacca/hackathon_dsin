@@ -131,3 +131,25 @@ class EquipamentoResponse(EquipamentoBase):
     propriedades: List[PropriedadeResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class HistoricoManutencaoCreate(BaseModel):
+    situacao_nova: EquipamentoSituacao = Field(..., description="Nova situação do equipamento após a intervenção")
+    motivo: str = Field(..., min_length=2, max_length=255, description="Descrição do serviço / motivo da manutenção")
+    custo_manutencao: float = Field(default=0.0, ge=0.0, description="Custo financeiro da intervenção em R$")
+    tempo_inatividade_horas: float = Field(default=0.0, ge=0.0, description="Tempo em que o equipamento ficou inativo (horas)")
+    data_mudanca: Optional[datetime] = Field(None, description="Data da intervenção (default: agora)")
+
+
+class HistoricoManutencaoResponse(BaseModel):
+    id: int
+    equipamento_id: int
+    situacao_anterior: Optional[EquipamentoSituacao] = None
+    situacao_nova: EquipamentoSituacao
+    data_mudanca: datetime
+    motivo: Optional[str] = None
+    custo_manutencao: float
+    tempo_inatividade_horas: float
+
+    model_config = ConfigDict(from_attributes=True)
+

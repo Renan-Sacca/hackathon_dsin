@@ -56,8 +56,25 @@
                     </li>
                 </ul>
 
-                <!-- User profile & Logout -->
+                <!-- Alerts Badge, User profile & Logout -->
                 <div class="d-flex align-items-center gap-3">
+                    <!-- Alertas Dropdown Interativo (P2-ALERT-02 / P2-ALERT-04) -->
+                    <div class="dropdown">
+                        <button class="btn btn-outline-glass btn-sm position-relative text-danger border-danger border-opacity-25" type="button" id="nav-alert-btn" data-bs-toggle="dropdown" aria-expanded="false" title="Central de Notificações">
+                            <i class="bi bi-bell-fill"></i>
+                            <span id="nav-alert-count" class="badge bg-danger rounded-pill ms-1" style="display: none;">0</span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end glass-panel p-2 shadow-lg" style="width: 360px; max-height: 440px; overflow-y: auto;" aria-labelledby="nav-alert-btn">
+                            <div class="d-flex justify-content-between align-items-center px-2 py-1 mb-2 border-bottom border-secondary border-opacity-25">
+                                <span class="small fw-bold text-light"><i class="bi bi-bell-fill text-danger me-1"></i> Central de Alertas</span>
+                                <span id="nav-alert-total-label" class="badge bg-secondary" style="font-size:0.7rem;">0 alertas</span>
+                            </div>
+                            <div id="nav-alert-items-list">
+                                <div class="text-center py-3 text-muted small">Carregando alertas...</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="d-none d-md-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-dark border border-secondary border-opacity-25">
                         <i class="bi bi-person-circle text-info"></i>
                         <span id="user-display-name" class="small fw-semibold text-light">Operador</span>
@@ -121,8 +138,55 @@
                         }
                     }
                 } catch (e) {}
+
+                // Hydrate alerts dropdown with all alerts
+                try {
+                    const alerts = await apiFetch('/api/dashboard/alertas', { silentError: true });
+                    const badge = document.getElementById('nav-alert-count');
+                    const totalLabel = document.getElementById('nav-alert-total-label');
+                    const listContainer = document.getElementById('nav-alert-items-list');
+
+                    if (alerts && alerts.length > 0) {
+                        if (badge) {
+                            badge.textContent = alerts.length;
+                            badge.style.display = 'inline-block';
+                        }
+                        if (totalLabel) totalLabel.textContent = `${alerts.length} alertas ativos`;
+                        if (listContainer) {
+                            listContainer.innerHTML = alerts.map(a => {
+                                let badgeColor = 'bg-primary';
+                                if (a.severidade === 'CRITICO') badgeColor = 'bg-danger';
+                                else if (a.severidade === 'URGENTE') badgeColor = 'bg-warning text-dark';
+
+                                return `
+                                    <div class="p-2 mb-1 rounded bg-dark border border-secondary border-opacity-25" style="cursor: pointer; transition: background 0.2s;" 
+                                         onclick="clickAlertaNavbar(${a.equipamento_id}, ${a.latitude}, ${a.longitude})">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="badge ${badgeColor}" style="font-size:0.65rem;">${a.severidade}</span>
+                                            <span class="text-muted font-monospace" style="font-size:0.7rem;">${a.numero_serie}</span>
+                                        </div>
+                                        <div class="small text-light mb-1">${a.mensagem}</div>
+                                        <div class="text-muted" style="font-size:0.7rem;"><i class="bi bi-geo-alt me-1"></i>${a.bairro}</div>
+                                    </div>
+                                `;
+                            }).join('');
+                        }
+                    } else {
+                        if (listContainer) {
+                            listContainer.innerHTML = '<div class="text-center py-3 text-muted small"><i class="bi bi-check-circle text-success me-1"></i>Nenhum alerta ativo</div>';
+                        }
+                    }
+                } catch (e) {}
             }
         });
+
+        function clickAlertaNavbar(id, lat, lon) {
+            if (typeof focarNoEquipamento === 'function') {
+                focarNoEquipamento(id, lat, lon);
+            } else {
+                window.location.href = `/admin/dashboard?foco_id=${id}&lat=${lat}&lon=${lon}`;
+            }
+        }
     </script>
     {% block extra_scripts %}{% endblock %}
 </body>

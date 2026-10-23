@@ -7,8 +7,13 @@ from app.models.equipamento import (
     EquipamentoTipo,
     ManutencaoTipo,
 )
+from app.models.historico_equipamento import HistoricoEquipamento
 from app.repositories.equipamento_repository import EquipamentoRepository
-from app.schemas.equipamento import EquipamentoCreate, EquipamentoUpdate
+from app.schemas.equipamento import (
+    EquipamentoCreate,
+    EquipamentoUpdate,
+    HistoricoManutencaoCreate,
+)
 
 
 class EquipamentoService:
@@ -44,7 +49,17 @@ class EquipamentoService:
         if data.situacao == EquipamentoSituacao.MAU_FUNCIONAMENTO:
             data.manutencao_tipo = ManutencaoTipo.IMEDIATA
 
-        return self.repo.create(data)
+        eq = self.repo.create(data)
+
+        # Registra criação no histórico de situações
+        self.repo.add_historico(
+            equipamento_id=eq.id,
+            situacao_anterior=None,
+            situacao_nova=eq.situacao,
+            motivo=f"Cadastro inicial do equipamento na situação '{eq.situacao.value}'."
+        )
+
+        return eq
 
     def update_equipamento(
         self,
@@ -73,6 +88,8 @@ class EquipamentoService:
         lon = data.longitude if data.longitude is not None else equipamento.longitude
         self.validate_coordinates(lat, lon)
 
+        situacao_anterior = equipamento.situacao
+
         # Business Rule 1: Furtado ou Desativado -> Operacional não pode ocorrer diretamente sem validação
         if data.situacao == EquipamentoSituacao.OPERACIONAL and equipamento.situacao in (
             EquipamentoSituacao.FURTADO,
@@ -91,7 +108,19 @@ class EquipamentoService:
         if data.situacao == EquipamentoSituacao.MAU_FUNCIONAMENTO:
             data.manutencao_tipo = ManutencaoTipo.IMEDIATA
 
-        return self.repo.update(equipamento, data)
+        updated_eq = self.repo.update(equipamento, data)
+
+        # Registrar histórico se houve mudança de situação
+        if data.situacao and data.situacao != situacao_anterior:
+            motivo = f"Alteração de situação de '{situacao_anterior.value}' para '{data.situacao.value}'."
+            self.repo.add_historico(
+                equipamento_id=updated_eq.id,
+                situacao_anterior=situacao_anterior,
+                situacao_nova=data.situacao,
+                motivo=motivo
+            )
+
+        return updated_eq
 
     def get_equipamento(self, equipamento_id: int) -> Equipamento:
         equipamento = self.repo.get_by_id(equipamento_id)
@@ -101,6 +130,31 @@ class EquipamentoService:
                 detail=f"Equipamento ID {equipamento_id} não encontrado."
             )
         return equipamento
+
+    def get_historico(self, equipamento_id: int) -> List[HistoricoEquipamento]:
+        self.get_equipamento(equipamento_id)
+        return self.repo.get_historico(equipamento_id)
+
+    def add_historico(self, equipamento_id: int, data: HistoricoManutencaoCreate) -> HistoricoEquipamento:
+        equipamento = self.get_equipamento(equipamento_id)
+        situacao_anterior = equipamento.situacao
+
+        # Atualiza a situação do equipamento
+        equipamento.situacao = data.situacao_nova
+        if data.situacao_nova == EquipamentoSituacao.OPERACIONAL:
+            equipamento.manutencao_tipo = ManutencaoTipo.NENHUMA
+
+        self.db.commit()
+
+        return self.repo.add_historico(
+            equipamento_id=equipamento_id,
+            situacao_anterior=situacao_anterior,
+            situacao_nova=data.situacao_nova,
+            motivo=data.motivo,
+            custo_manutencao=data.custo_manutencao,
+            tempo_inatividade_horas=data.tempo_inatividade_horas,
+            data_mudanca=data.data_mudanca
+        )
 
     def list_equipamentos(
         self,
@@ -138,3 +192,4 @@ class EquipamentoService:
             "situacoes": [s.value for s in EquipamentoSituacao],
             "manutencoes": [m.value for m in ManutencaoTipo],
         }
+

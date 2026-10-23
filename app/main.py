@@ -11,7 +11,9 @@ from app.database.seed import init_db, seed_default_admin
 from app.routers import (
     agentes_router,
     auth_router,
+    dashboard_router,
     equipamentos_router,
+    predictive_router,
     pages_router,
 )
 
@@ -65,6 +67,8 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 app.include_router(auth_router)
 app.include_router(equipamentos_router)
 app.include_router(agentes_router)
+app.include_router(dashboard_router)
+app.include_router(predictive_router)
 
 # Include HTML Pages Router
 app.include_router(pages_router)

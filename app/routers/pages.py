@@ -18,8 +18,18 @@ def login_page(request: Request):
 
 @router.get("/", response_class=RedirectResponse)
 def index_redirect():
-    """Redireciona a raiz para o catálogo de equipamentos."""
-    return RedirectResponse(url="/admin/equipamentos")
+    """Redireciona a raiz para a Central de Operações."""
+    return RedirectResponse(url="/admin/dashboard")
+
+
+@router.get("/admin/dashboard", response_class=HTMLResponse)
+def dashboard_page(request: Request):
+    """Renderiza a Central de Operações com Mapa Interativo e KPIs em tempo real."""
+    return templates.TemplateResponse(
+        request=request,
+        name="admin/dashboard.html",
+        context={"active_page": "dashboard"}
+    )
 
 
 @router.get("/admin/equipamentos", response_class=HTMLResponse)
@@ -90,13 +100,12 @@ def agentes_editar_page(request: Request, agente_id: int):
     )
 
 
-@router.get("/admin/dashboard", response_class=RedirectResponse)
-def dashboard_redirect():
-    """Redireciona para equipamentos enquanto dashboard da Parte 2 não está concluído."""
-    return RedirectResponse(url="/admin/equipamentos")
+@router.get("/admin/preditivo", response_class=HTMLResponse)
+def preditivo_page(request: Request):
+    """Renderiza a Visão Preditiva com análise temporal, projeção de custos, correlação de falhas e reforço operacional."""
+    return templates.TemplateResponse(
+        request=request,
+        name="admin/preditivo.html",
+        context={"active_page": "preditivo"}
+    )
 
-
-@router.get("/admin/preditivo", response_class=RedirectResponse)
-def preditivo_redirect():
-    """Redireciona para equipamentos enquanto preditivo da Parte 3 não está concluído."""
-    return RedirectResponse(url="/admin/equipamentos")
